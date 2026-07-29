@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  rabbit:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # management UI (guest/guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  auth:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    environment:
+      JWT_SECRET: dev-only-change-me
+      AUTH_PORT: 4001
+    ports: ["4001:4001"]
+    depends_on:
+      rabbit: { condition: service_healthy }
+      redis:  { condition: service_healthy }
+
+  chat:
+    build:
+      context: .
+      dockerfile: services/chat/Dockerfile
+    environment:
+      JWT_SECRET: dev-only-change-me
+      CHAT_PORT: 4002
+      RABBIT_URL: amqp://guest:guest@rabbit:5672
+      REDIS_URL: redis://redis:6379
+    ports: ["4002:4002"]
+    depends_on:
+      rabbit: { condition: service_healthy }
+      redis:  { condition: service_healthy }
+      auth:   { condition: service_started }
+
+  notification:
+    build:
+      context: .
+      dockerfile: services/notification/Dockerfile
+    environment:
+      NOTIF_PORT: 4003
+      RABBIT_URL: amqp://guest:guest@rabbit:5672
+      REDIS_URL: redis://redis:6379
+      RABBIT_PREFETCH: 32
+    ports: ["4003:4003"]
+    depends_on:
+      rabbit: { condition: service_healthy }
+      redis:  { condition: service_healthy }

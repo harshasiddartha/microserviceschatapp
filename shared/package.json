@@ -1,0 +1,14 @@
+{
+  "name": "@chat/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^9.0.0",
+    "prom-client": "^15.1.3"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "microservices-chat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservices chat: auth + chat + notification, RabbitMQ pub/sub, Redis presence",
+  "workspaces": [
+    "shared",
+    "services/auth",
+    "services/chat",
+    "services/notification"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.js services/*/tests/*.test.js 2>/dev/null || node --test tests",
+    "lint": "eslint services shared tests || true",
+    "start:auth": "node services/auth/src/index.js",
+    "start:chat": "node services/chat/src/index.js",
+    "start:notif": "node services/notification/src/index.js",
+    "up": "docker compose up --build",
+    "down": "docker compose down -v"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

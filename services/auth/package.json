@@ -1,0 +1,11 @@
+{
+  "name": "@chat/auth",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": { "start": "node src/index.js" },
+  "dependencies": {
+    "@chat/shared": "*",
+    "express": "^4.19.2"
+  }
+}
