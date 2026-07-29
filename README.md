@@ -379,47 +379,9 @@ end-to-end message latency (`publish → consume`) alongside queue depth.
 
 ---
 
-## Anticipated questions
 
-**Q: How exactly does "notification crash never loses messages" work?**
-A: Three things stack. (1) The chat service uses a *publisher-confirmed*
-channel with `persistent: true`, so if the HTTP call returns 201 the
-broker has acknowledged the message. (2) The queue is `durable: true`, so
-a broker restart preserves it on disk. (3) The consumer uses manual ACKs
-and only ACKs *after* the handler returns; a crash between delivery and
-ACK causes RabbitMQ to re-deliver to another consumer or the same one on
-reconnect.
 
-**Q: What happens when a message keeps failing to be handled?**
-A: The consumer tracks an `x-attempts` counter in the message headers. On
-handler exception it `nack`s with `requeue=true` up to 4 times; on the
-5th failure it `reject`s with `requeue=false`, which routes the message
-to the dead-letter exchange (`chat.events.dlx`) and into
-`notifications.dead.q` for operator inspection. This prevents a single
-poison message from blocking the queue forever.
 
-**Q: Why REST *and* pub/sub instead of one transport?**
-A: Different requirements. The auth → chat handshake needs low-latency,
-synchronous failure semantics — REST is a fine fit. The chat → notification
-fan-out needs decoupling: chat should not care whether notification is
-up, slow, or scaled to 10 workers. Pub/sub is the right primitive.
-
-**Q: How do you know if the notification service is falling behind?**
-A: The `rabbit_queue_depth` gauge on notification-svc reflects
-`notifications.q` depth. Alert on `queue_depth{queue="notifications.q"} >
-1000 for 5m`.
-
-**Q: What breaks first at scale?**
-A: The in-memory message store in chat-svc, obviously (portfolio-only).
-Beyond that: the auth service is stateless and horizontally scalable,
-chat-svc is stateless if you move messages to Postgres + Redis, and the
-consumer count for notification-svc scales linearly with the queue's
-prefetch × replica count.
-
-**Q: How would you add a new consumer without touching chat-svc?**
-A: Declare a new durable queue bound to `chat.events` with the routing
-keys it cares about. The topic-exchange fan-out means the publisher
-doesn't need to know about new subscribers — that's the point of pub/sub.
 
 ---
 
